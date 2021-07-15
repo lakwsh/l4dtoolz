@@ -21,7 +21,7 @@ unsigned char maxslots_new[] = {0x06, 0x00, 0x83, 0xF8, 0x3C, 0x90, 0x90, 0x90};
 const char *slots_check_new = "\x02\xE2\x90\x90";
 
 const char *players_range = "\x09\x8B\x86\x28\x02\x00\x00\x8B\x4D\x08";
-const char *players_range_new = "\x06\x00\xB8\x40\x00\x00\x00\x90";
+const char *players_range_new = "\x06\x00\xB8\x1F\x00\x00\x00\x90";
 
 const char *players_running = "\x0A\x8B\xE5\x5D\xC3\x8B\x80\x0C\x04\x00\x00";
 const char *players_running_new = "\x01\xF0\xEB";
