@@ -312,7 +312,6 @@ err_sv:
 	}
 	((uint *)icvar->FindVar("net_splitpacket_maxrate"))[15] = false; // m_bHasMax
 	Msg("[L4DToolZ] tickrate: %d\n", tickrate);
-
 	engine->ServerCommand("sv_setmax 31\n");
 	return true;
 }
