@@ -9,6 +9,7 @@ on:
       - '**.yml'
   schedule:
     - cron: '30 03 01 */3 *'
+  workflow_dispatch:
 
 jobs:
   build_linux:
@@ -29,6 +30,7 @@ jobs:
         path: hl2sdk-l4d2
     - uses: actions/checkout@v4
       with:
+        submodules: 'true'
         path: l4dtoolz
     - name: Build L4DToolZ
       working-directory: l4dtoolz
@@ -47,6 +49,7 @@ jobs:
         path: hl2sdk-l4d2
     - uses: actions/checkout@v4
       with:
+        submodules: 'true'
         path: l4dtoolz
     - name: Setup msbuild
       uses: microsoft/setup-msbuild@v2

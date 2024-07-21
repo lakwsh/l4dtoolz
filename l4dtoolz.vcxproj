@@ -45,11 +45,13 @@
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
+    <IncludePath>sigtool</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>sigtool</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -97,13 +99,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="l4dtoolz.cpp" />
-    <ClCompile Include="signature.cpp" />
+    <ClCompile Include="sigtool\mem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="l4dtoolz.h" />
-    <ClInclude Include="signature.h" />
-    <ClInclude Include="signature_linux.h" />
-    <ClInclude Include="signature_win32.h" />
+    <ClInclude Include="sigtool\sigtool.h" />
+    <ClInclude Include="sig_linux.h" />
+    <ClInclude Include="sig_win32.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

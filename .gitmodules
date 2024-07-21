@@ -1,0 +1,3 @@
+[submodule "sigtool"]
+	path = sigtool
+	url = git@github.com:lakwsh/sigtool.git
