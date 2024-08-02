@@ -283,6 +283,8 @@ bool l4dtoolz::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameSe
         ((uint *)g_cvar->FindVar("net_splitpacket_maxrate"))[15] = 0;  // m_bHasMax
         Msg("[L4DToolZ] tickrate: %d\n", g_tickrate);
     }
+
+    g_engine->ServerCommand("sv_setmax 31\n");
     return true;
 }
 
