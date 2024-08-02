@@ -11,7 +11,7 @@ public:
     virtual void Unload();
     virtual void Pause() { }
     virtual void UnPause() { }
-    virtual const char *GetPluginDescription() { return "L4DToolZ v2.3.2, https://github.com/lakwsh/l4dtoolz"; }
+    virtual const char *GetPluginDescription() { return "L4DToolZ(2155) v2.3.2, https://github.com/lakwsh/l4dtoolz"; }
     virtual void LevelInit(char const *pMapName) { }
     virtual void ServerActivate(edict_t *pEdictList, int edictCount, int clientMax);
     virtual void GameFrame(bool simulating) { }

@@ -1,9 +1,9 @@
-name: l4dtoolz
+name: l4dtoolz-2155
 
 on:
   push:
     branches:
-      - 'main'
+      - '2155'
     paths-ignore:
       - '**.md'
       - '**.yml'
@@ -32,12 +32,13 @@ jobs:
       with:
         submodules: 'true'
         path: l4dtoolz
+        ref: 2155
     - name: Build L4DToolZ
       working-directory: l4dtoolz
       run: make all
     - uses: actions/upload-artifact@v3
       with:
-        name: l4dtoolz-${{github.run_id}}
+        name: l4dtoolz-${{github.run_id}}-2155
         path: l4dtoolz/Release/l4dtoolz.so
 
   build_windows:
@@ -51,6 +52,7 @@ jobs:
       with:
         submodules: 'true'
         path: l4dtoolz
+        ref: 2155
     - name: Setup msbuild
       uses: microsoft/setup-msbuild@v2
     - name: Build hl2sdk
@@ -61,7 +63,7 @@ jobs:
       run: msbuild l4dtoolz.vcxproj /p:Configuration=Release /p:Platform=Win32 -maxcpucount:8
     - uses: actions/upload-artifact@v3
       with:
-        name: l4dtoolz-${{github.run_id}}
+        name: l4dtoolz-${{github.run_id}}-2155
         path: l4dtoolz/Release/l4dtoolz.dll
 
   upload_files:
@@ -76,7 +78,7 @@ jobs:
       run: wget https://oss.lakwsh.net/l4dtoolz.vdf
     - uses: actions/upload-artifact@v3
       with:
-        name: l4dtoolz-${{github.run_id}}
+        name: l4dtoolz-${{github.run_id}}-2155
         path: |
           *.md
           l4dtoolz.vdf

@@ -14,8 +14,8 @@
 #define maxcl_idx    0x41
 #define steam3_idx   0x40
 #define steam3_off   0x0D
-#define authreq_idx  0x1A
-#define authrsp_idx  0x20
+#define authreq_idx  0x1D
+#define authrsp_idx  0x21
 #define lobbyreq_idx 0x3D
 
 uint8_t max_player[] = {0x06, 0x00, 0xB8, '*', 0x00, 0x00, 0x00, 0xC3};
