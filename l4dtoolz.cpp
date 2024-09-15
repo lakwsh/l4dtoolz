@@ -276,7 +276,7 @@ bool l4dtoolz::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameSe
         auto game = (uintptr_t **)gameServerFactory(INTERFACEVERSION_SERVERGAMEDLL, NULL);
         tickint_ptr = (uintptr_t)&game[0][tickint_idx];
         uint8_t tickint[6] = {0x04, 0x00};
-		auto tickint_new = (mem_sig_t *)tickint;
+        auto tickint_new = (mem_sig_t *)tickint;
         read_sig(tickint_ptr, tickint_new, tickint_org);
         *(uintptr_t *)tickint_new->sig = (uintptr_t)&GetTickInterval;
         write_sig(tickint_ptr, tickint_new);
