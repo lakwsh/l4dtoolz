@@ -8,7 +8,7 @@
 #define info_off     0x02
 #define info_idx     0x88
 #define sv_off       0x08
-#define edict_idx    0x86
+#define edict_idx    0x87
 #define slots_idx    0x60
 #define cookie_idx   0x5C
 #define maxcl_idx    0x41
