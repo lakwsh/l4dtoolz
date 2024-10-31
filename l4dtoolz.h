@@ -11,7 +11,7 @@ public:
     virtual void Unload();
     virtual void Pause() { }
     virtual void UnPause() { }
-    virtual const char *GetPluginDescription() { return "L4DToolZ v2.3.3, https://github.com/lakwsh/l4dtoolz"; }
+    virtual const char *GetPluginDescription() { return "L4DToolZ v2.3.4, https://github.com/lakwsh/l4dtoolz"; }
     virtual void LevelInit(char const *pMapName) { }
     virtual void ServerActivate(edict_t *pEdictList, int edictCount, int clientMax);
     virtual void GameFrame(bool simulating) { }
@@ -25,13 +25,6 @@ public:
     virtual PLUGIN_RESULT ClientCommand(edict_t *pEntity, const CCommand &args) { return PLUGIN_CONTINUE; }
     virtual PLUGIN_RESULT NetworkIDValidated(const char *pszUserName, const char *pszNetworkID) { return PLUGIN_CONTINUE; }
     virtual void OnQueryCvarValueFinished(QueryCvarCookie_t iCookie, edict_t *pPlayerEntity, EQueryCvarValueStatus eStatus, const char *pCvarName, const char *pCvarValue) { }
-
-    static void Cookie_f(const CCommand &args);
-    static void OnChangeMax(IConVar *var, const char *pOldValue, float flOldValue);
-    static void OnSetMaxCl(IConVar *var, const char *pOldValue, float flOldValue);
-    static void OnBypassAuth(IConVar *var, const char *pOldValue, float flOldValue);
-    static void OnAntiSharing(IConVar *var, const char *pOldValue, float flOldValue);
-    static void OnForceUnreserved(IConVar *var, const char *pOldValue, float flOldValue);
 };
 extern l4dtoolz g_l4dtoolz;
 
