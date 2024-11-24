@@ -36,7 +36,6 @@
 #### `sv_steam_bypass <0/1>` (Set to 1 to bypass SteamID verification)
 - This feature can alleviate the `No Steam logon` (code 6) issue (only for players who enter while the feature is enabled).
 - Enabling this feature **will weaken server security**, and Family Sharing functionality will be disabled.
-- **This cvar is loaded with a delay and cannot be added to launch options.**
 - **Note: Enabling this feature will cause abnormal A2S_INFO results, which can be fixed with [this plugin](https://github.com/lakwsh/l4d2_vomit_fix).**
 
 ## 4. Disable Family Sharing (No dependency)
