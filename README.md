@@ -28,9 +28,8 @@
 - **注意: 如通过plugin_load指令手动加载本扩展,可能出现tickrate异常问题**
 ### 2.1 相关CVar
 - 需要修改(写到server.cfg,部分cvar需要sm_cvar前缀):
-- `sv_minupdaterate`,`sv_maxupdaterate`,`sv_mincmdrate`,`sv_maxcmdrate`,
-- `nb_update_frequency`,`sv_client_min_interp_ratio`,`fps_max`,
-- `sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
+- `sv_mincmdrate`,`sv_maxcmdrate`,`nb_update_frequency`,`sv_client_min_interp_ratio`,
+- `fps_max`,`sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
 
 ## 3. 绕过SteamID验证
 #### `sv_steam_bypass <0/1>`(置1为不验证SteamID)

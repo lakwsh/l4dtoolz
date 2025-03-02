@@ -35,10 +35,11 @@ jobs:
     - name: Build L4DToolZ
       working-directory: l4dtoolz
       run: make all
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: l4dtoolz-${{github.run_id}}
+        name: linux
         path: l4dtoolz/Release/l4dtoolz.so
+        retention-days: 1
 
   build_windows:
     runs-on: windows-2022
@@ -59,24 +60,33 @@ jobs:
     - name: Build L4DToolZ
       working-directory: l4dtoolz
       run: msbuild l4dtoolz.vcxproj /p:Configuration=Release /p:Platform=Win32 -maxcpucount:8
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: l4dtoolz-${{github.run_id}}
+        name: windows
         path: l4dtoolz/Release/l4dtoolz.dll
+        retention-days: 1
 
-  upload_files:
+  package_release:
+    needs: [build_linux, build_windows]
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/download-artifact@v4
+      with:
+        path: dist
+        merge-multiple: true
     - uses: actions/checkout@v4
       with:
         sparse-checkout: |
           README.md
           README_EN.md
+        path: docs
     - name: Download vdf
-      run: wget https://oss.lakwsh.net/l4dtoolz.vdf
-    - uses: actions/upload-artifact@v3
+      run: |
+        wget https://oss.lakwsh.net/l4dtoolz.vdf
+        mv *.vdf docs/*.md dist/
+    - uses: actions/upload-artifact@v4
       with:
         name: l4dtoolz-${{github.run_id}}
-        path: |
-          *.md
-          l4dtoolz.vdf
+        path: dist
+        compression-level: 9
+        if-no-files-found: error
