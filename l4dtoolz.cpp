@@ -12,6 +12,21 @@
 #define CHKPTR(P, V) ((P) && !((uintptr_t)(P) & (V)))
 #define CMPPTR(P, V, C) (CHKPTR(P, V) && abs((int)(P) - (int)(C)) < BINMSIZE)
 #define READCALL(P) (((P) + 5 - 1) + *(int *)(P))
+#define CHK_RET_MSG(cond, name)                       \
+    do {                                              \
+        if (cond) {                                   \
+            Msg("[L4DToolZ] " #name " init error\n"); \
+            return;                                   \
+        }                                             \
+    } while (0);
+#define CHK_RET_VAR_MSG(cond, name, val)              \
+    do {                                              \
+        if (cond) {                                   \
+            var->SetValue(val);                       \
+            Msg("[L4DToolZ] " #name " init error\n"); \
+            return;                                   \
+        }                                             \
+    } while (0);
 
 #pragma pack(push, 1)
 class CSteamID {
@@ -32,10 +47,7 @@ static IVEngineServer *g_engine;
 static ICvar *g_cvar;
 static int g_tickrate = 30;
 
-static edict_t **edict_ptr;
-static int *maxcl_ptr;
-static int *slots_ptr;
-static uint64 *cookie_ptr;
+static uintptr_t *sv_ptr;
 static uintptr_t ***gamerules_ptr;
 static uintptr_t rules_max_ptr;
 static uintptr_t rules_max_org;
@@ -70,17 +82,13 @@ static int FUNC_T GetMaxHumanPlayers() {
 }
 
 void OnChangeMax(IConVar *var, const char *, float) {
-    if (!slots_ptr) {
-        var->SetValue(-1);
-        Msg("[L4DToolZ] sv_maxplayers init error\n");
-        return;
-    }
+    CHK_RET_VAR_MSG(!sv_ptr, "sv", -1);
     int new_value = ((ConVar *)var)->GetInt();
     if (new_value < 0) {
         write_dword(rules_max_ptr, rules_max_org);
         return;
     }
-    *slots_ptr = new_value;
+    ((int *)sv_ptr)[slots_idx] = new_value;
     write_dword(match_max_ptr, (uintptr_t)&GetTotalNumPlayersSupported);
     write_dword(rules_max_ptr, (uintptr_t)&GetMaxHumanPlayers);
 }
@@ -88,13 +96,11 @@ ConVar sv_maxplayers("sv_maxplayers", "-1", 0, "Max human players", true, -1, tr
 
 ConVar sv_lobby_cookie("sv_lobby_cookie", "0", 0);
 void Cookie_f(const CCommand &args) {
-    if (!cookie_ptr) {
-        Msg("[L4DToolZ] sv_cookie init error\n");
-        return;
-    }
-    if (*cookie_ptr) {
+    CHK_RET_MSG(!sv_ptr, "sv");
+    auto cookie = (uint64 *)&sv_ptr[cookie_idx];
+    if (*cookie) {
         char buf[20];
-        snprintf(buf, sizeof(buf), "%llu", *cookie_ptr);
+        snprintf(buf, sizeof(buf), "%llu", *cookie);
         sv_lobby_cookie.SetValue(buf);
     }
     if (args.ArgC() != 2) {
@@ -104,29 +110,24 @@ void Cookie_f(const CCommand &args) {
     uint64 val = atoll(args[1]);
     g_cvar->FindVar("sv_hosting_lobby")->SetValue(val != 0);
     g_cvar->FindVar("sv_allow_lobby_connect_only")->SetValue(val != 0);
-    *cookie_ptr = val;
+    *cookie = val;
 }
 ConCommand cookie("sv_cookie", Cookie_f, "Lobby reservation cookie");
 
+#define maxcl_idx 0x41
 void OnSetMaxCl(IConVar *var, const char *, float) {
-    if (!maxcl_ptr) {
-        Msg("[L4DToolZ] sv_setmax init error\n");
-        return;
-    }
+    CHK_RET_MSG(!sv_ptr, "sv");
     int new_value = ((ConVar *)var)->GetInt();
-    *maxcl_ptr = new_value;
+    ((int *)sv_ptr)[maxcl_idx] = new_value;
     Msg("[L4DToolZ] maxplayers set to %d\n", new_value);
 }
 ConVar sv_setmax("sv_setmax", "18", 0, "Max clients", true, 18, true, 32, OnSetMaxCl);
 
 void l4dtoolz::ServerActivate(edict_t *, int, int) {
     int slots = sv_maxplayers.GetInt();
-    if ((slots >= 0) && slots_ptr) *slots_ptr = slots;
+    if (slots >= 0) ((int *)sv_ptr)[slots_idx] = slots;
     if (rules_max_ptr) return;
-    if (!gamerules_ptr || !CHKPTR(*gamerules_ptr, 0x7U)) {  // malloc
-        Msg("[L4DToolZ] sv_maxplayers(rules) init error\n");
-        return;
-    }
+    CHK_RET_MSG(!gamerules_ptr || !CHKPTR(*gamerules_ptr, 0x7U), "sv_maxplayers(rules)");  // malloc
     rules_max_ptr = (uintptr_t)&(*gamerules_ptr)[0][info_idx];
     rules_max_org = (*gamerules_ptr)[0][info_idx];
     if (slots >= 0) write_dword(rules_max_ptr, (uintptr_t)&GetMaxHumanPlayers);
@@ -140,33 +141,31 @@ HOOK_DEF(bool, CheckChallengeType, uintptr_t client, int, void *, int, void *key
 }
 
 void OnBypassAuth(IConVar *var, const char *, float) {
-    int new_value = ((ConVar *)var)->GetInt();
-    if (!steam3_ptr || !check_ptr) {
-        var->SetValue(0);
-        Msg("[L4DToolZ] sv_steam_bypass init error\n");
-        return;
-    }
-    if (new_value) write_dword(check_ptr, (uintptr_t)&CheckChallengeType);
+    CHK_RET_VAR_MSG(!steam3_ptr || !check_ptr, "sv_steam_bypass", 0);
+    if (((ConVar *)var)->GetInt()) write_dword(check_ptr, (uintptr_t)&CheckChallengeType);
     else write_dword(check_ptr, check_org);
 }
 ConVar sv_steam_bypass("sv_steam_bypass", "0", 0, "Bypass steam validation", true, 0, true, 1, OnBypassAuth);
 
-#define rate_idx 0x2C
+#define rate_idx     0x2C
+#define snapshot_idx 0x87  // 2231
 void l4dtoolz::ClientSettingsChanged(edict_t *pEdict)  // rate
 {
     if (g_tickrate == 30) return;
-    if (!edict_ptr || !CHKPTR(*edict_ptr, 0x3U)) {
-        Msg("[L4DToolZ] datarate init error\n");
-        return;
-    }
-    auto net = (int *)g_engine->GetPlayerNetInfo((int)(pEdict - *edict_ptr));
+    CHK_RET_MSG(!sv_ptr, "sv");
+    auto edicts = ((edict_t **)sv_ptr)[edict_idx];
+    CHK_RET_MSG(!CHKPTR(edicts, 0x3U), "edicts");
+    auto idx = (int)(pEdict - edicts);
+    auto net = (int *)g_engine->GetPlayerNetInfo(idx);
     if (net) net[rate_idx] = g_tickrate * 1000;  // real
+    auto client = CALL(int *, ((uintptr_t **)sv_ptr)[0][client_idx], int)(sv_ptr, idx - 1);  // +4
+    if (client) client[snapshot_idx - 1] = 1.0f / g_tickrate;
 }
 
 PLUGIN_RESULT l4dtoolz::ClientConnect(bool *bAllowConnect, edict_t *pEntity, const char *, const char *, char *, int) {
     if (sv_steam_bypass.GetInt() != 1) return PLUGIN_CONTINUE;
     ValidateAuthTicketResponse_t rsp = {(uint64_t)g_engine->GetPlayerUserId(pEntity)};
-    CALL(void, authrsp_org, uintptr_t *, void *)(steam3_ptr, &rsp);
+    CALL(void, authrsp_org, void *)(steam3_ptr, &rsp);
     if (g_engine->GetPlayerUserId(pEntity) == -1) {
         *bAllowConnect = false;
         return PLUGIN_STOP;
@@ -180,17 +179,12 @@ HOOK_DEF(void, OnValidateAuthTicketResponse, ValidateAuthTicketResponse_t *rsp) 
         rsp->code = 2;
         Msg("[L4DToolZ] %llu using family sharing, owner: %llu.\n", rsp->id.m_steamid, rsp->owner.m_steamid);
     }
-    CALL(void, authrsp_org, uintptr_t *, void *)(steam3_ptr, rsp);
+    CALL(void, authrsp_org, void *)(steam3_ptr, rsp);
 }
 
 void OnAntiSharing(IConVar *var, const char *, float) {
-    int new_value = ((ConVar *)var)->GetInt();
-    if (!authrsp_ptr) {
-        var->SetValue(0);
-        Msg("[L4DToolZ] sv_anti_sharing init error\n");
-        return;
-    }
-    if (new_value) *authrsp_ptr = (uintptr_t)&OnValidateAuthTicketResponse;
+    CHK_RET_VAR_MSG(!authrsp_ptr, "sv_anti_sharing", 0);
+    if (((ConVar *)var)->GetInt()) *authrsp_ptr = (uintptr_t)&OnValidateAuthTicketResponse;
     else *authrsp_ptr = authrsp_org;
 }
 ConVar sv_anti_sharing("sv_anti_sharing", "0", 0, "No family sharing", true, 0, true, 1, OnAntiSharing);
@@ -198,13 +192,8 @@ ConVar sv_anti_sharing("sv_anti_sharing", "0", 0, "No family sharing", true, 0, 
 HOOK_DEF(void, ReplyReservationRequest, void *, void *) { }
 
 void OnForceUnreserved(IConVar *var, const char *, float) {
-    int new_value = ((ConVar *)var)->GetInt();
-    if (!lobbyreq_ptr) {
-        var->SetValue(0);
-        Msg("[L4DToolZ] sv_force_unreserved init error\n");
-        return;
-    }
-    if (new_value) {
+    CHK_RET_VAR_MSG(!lobbyreq_ptr, "sv_force_unreserved", 0);
+    if (((ConVar *)var)->GetInt()) {
         write_dword(lobbyreq_ptr, (uintptr_t)&ReplyReservationRequest);
         g_cvar->FindVar("sv_allow_lobby_connect_only")->SetValue(0);
         return;
@@ -215,13 +204,12 @@ ConVar sv_force_unreserved("sv_force_unreserved", "0", 0, "Disallow lobby reserv
 
 // Linux: static float FUNC_T GetTickInterval(void *);
 static float FUNC_T GetTickInterval() {
-    static float tickinv = 1.0f / g_tickrate;
-    return tickinv;
+    static float interval = 1.0f / g_tickrate;
+    return interval;
 }
 
 #define rules_idx   0x12  // rodata
 #define sv_idx      0x80  // rodata
-#define maxcl_idx   0x41
 #define title_idx   0x8   // rodata
 #define match_idx   0x4   // rodata
 #define tickint_idx 0x09  // rodata
@@ -238,27 +226,24 @@ bool l4dtoolz::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameSe
         auto gamerules = *(uintptr_t ****)(client[0][rules_idx] + rules_off);  // mov
         if (CMPPTR(gamerules, 0x3U, gameServerFactory)) gamerules_ptr = gamerules;
     }
-    if (!maxcl_ptr) {  // any
+    if (!sv_ptr) {
         auto sv = *(uintptr_t ***)(((uint **)g_engine)[0][sv_idx] + sv_off);
         if (!CMPPTR(sv, 0x7U, interfaceFactory)) return false;
-        maxcl_ptr = (int *)&sv[maxcl_idx];
-        slots_ptr = (int *)&sv[slots_idx];
-        cookie_ptr = (uint64 *)&sv[cookie_idx];
-        edict_ptr = (edict_t **)&sv[edict_idx];
+        sv_ptr = (uintptr_t *)sv;
         lobbyreq_ptr = (uintptr_t)&sv[0][lobby_idx];
         lobbyreq_org = sv[0][lobby_idx];
         check_ptr = (uintptr_t)&sv[0][check_idx];
         check_org = sv[0][check_idx];
-        auto sfunc = (uintptr_t *(*)(void)) READCALL(sv[0][steam3_idx] + steam3_off);
-        if (CMPPTR(sfunc, 0xFU, interfaceFactory)) {
-            steam3_ptr = sfunc();  // conn
+        auto func = (uintptr_t *(*)(void))READCALL(sv[0][steam3_idx] + steam3_off);
+        if (CMPPTR(func, 0xFU, interfaceFactory)) {
+            steam3_ptr = func();  // conn
             authrsp_ptr = &steam3_ptr[authrsp_idx];
             authrsp_org = *authrsp_ptr;
         }
     }
     if (!match_max_ptr) {
         auto match = (uintptr_t **)interfaceFactory("MATCHFRAMEWORK_001", NULL);
-        auto title = ((uintptr_t **(*)(void)) match[0][title_idx])();
+        auto title = ((uintptr_t **(*)(void))match[0][title_idx])();
         match_max_ptr = (uintptr_t)&title[0][match_idx];
         match_max_org = title[0][match_idx];
     }

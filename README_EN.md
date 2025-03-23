@@ -1,5 +1,5 @@
-# L4DToolZ
-### [中文版本](https://github.com/lakwsh/l4dtoolz/blob/main/README.md)
+# L4DToolZ(2155)
+### [中文版本](https://github.com/lakwsh/l4dtoolz/blob/2155/README.md)
 - Installation: [Download](https://github.com/lakwsh/l4dtoolz/actions/workflows/main.yml) and unzip to the addons folder.
 - **If using tickrate unlock feature, please delete tickrate_enabler**
 - If you encounter any problem, first input `plugin_print` in the **server console** to confirm that the extension is loaded correctly.
@@ -28,9 +28,8 @@
 - **Note: If this extension is manually loaded through the plugin_load command, tickrate anomalies may occur.**
 ### 2.1 Related CVars
 - Need to modify (write to server.cfg, some cvars need sm_cvar prefix):
-- `sv_minupdaterate`,`sv_maxupdaterate`,`sv_mincmdrate`,`sv_maxcmdrate`,
-- `nb_update_frequency`,`sv_client_min_interp_ratio`,`fps_max`,
-- `sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
+- `sv_mincmdrate`,`sv_maxcmdrate`,`nb_update_frequency`,`sv_client_min_interp_ratio`,
+- `fps_max`,`sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
 
 ## 3. Bypass SteamID Verification
 #### `sv_steam_bypass <0/1>` (Set to 1 to bypass SteamID verification)

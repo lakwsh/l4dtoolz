@@ -1,5 +1,5 @@
 # L4DToolZ(2155)
-### [English Version](https://github.com/lakwsh/l4dtoolz/blob/main/README_EN.md)
+### [English Version](https://github.com/lakwsh/l4dtoolz/blob/2155/README_EN.md)
 - 安装方法: [下载](https://github.com/lakwsh/l4dtoolz/actions/workflows/main.yml)并解压到addons文件夹
 - **如使用tickrate解锁功能,请删除tickrate_enabler**
 - 遇到任何问题请先在**服务器控制台**输入`plugin_print`确认扩展已经正确加载
@@ -28,9 +28,8 @@
 - **注意: 如通过plugin_load指令手动加载本扩展,可能出现tickrate异常问题**
 ### 2.1 相关CVar
 - 需要修改(写到server.cfg,部分cvar需要sm_cvar前缀):
-- `sv_minupdaterate`,`sv_maxupdaterate`,`sv_mincmdrate`,`sv_maxcmdrate`,
-- `nb_update_frequency`,`sv_client_min_interp_ratio`,`fps_max`,
-- `sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
+- `sv_mincmdrate`,`sv_maxcmdrate`,`nb_update_frequency`,`sv_client_min_interp_ratio`,
+- `fps_max`,`sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
 
 ## 3. 绕过SteamID验证
 #### `sv_steam_bypass <0/1>`(置1为不验证SteamID)
