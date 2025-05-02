@@ -11,7 +11,7 @@
 #define slots_idx   0x60
 #define cookie_idx  0x5C
 #define edict_idx   0x87
-#define client_idx  0x06
+#define client_idx  0x07
 #define lobby_idx   0x3D
 #define check_idx   0x39
 #define steam3_idx  0x40
