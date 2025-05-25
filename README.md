@@ -20,7 +20,6 @@
 #### `sv_cookie <cookie>`
 - 通常不需要手动使用本指令,建议使用[动态大厅插件](https://github.com/lakwsh/l4d2_rmc)自动管理
 - `cookie`为0即移除大厅,`sv_allow_lobby_connect_only`值自动置0
-- `cookie`不为0时`sv_allow_lobby_connect_only`值自动置1
 - **注意: 不移除大厅会限制最大玩家数为战役4人/对抗8人**
 
 ## 2. tickrate解锁

@@ -13,17 +13,8 @@ on:
 
 jobs:
   build_linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-    - name: Prepare env
-      run: |
-        echo "deb http://dk.archive.ubuntu.com/ubuntu/ xenial main" | sudo tee -a /etc/apt/sources.list
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32
-        sudo dpkg --add-architecture i386
-        sudo apt-get update
-        sudo apt install gcc-5-multilib g++-5-multilib
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 100
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 100
     - uses: actions/checkout@v4
       with:
         repository: lakwsh/hl2sdk-l4d2
@@ -34,7 +25,13 @@ jobs:
         path: l4dtoolz
     - name: Build L4DToolZ
       working-directory: l4dtoolz
-      run: make all
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace/l4dtoolz ubuntu:16.04 bash -c "
+          dpkg --add-architecture i386 &&
+          apt update &&
+          apt install -y gcc-5-multilib g++-5-multilib make &&
+          make all
+        "
     - uses: actions/upload-artifact@v4
       with:
         name: linux

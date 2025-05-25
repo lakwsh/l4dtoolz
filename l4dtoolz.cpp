@@ -108,8 +108,8 @@ void Cookie_f(const CCommand &args) {
         return;
     }
     uint64 val = atoll(args[1]);
-    g_cvar->FindVar("sv_hosting_lobby")->SetValue(val != 0);
-    g_cvar->FindVar("sv_allow_lobby_connect_only")->SetValue(val != 0);
+    g_cvar->FindVar("sv_hosting_lobby")->SetValue((val != 0) ? 1 : 0);
+    if (!val) g_cvar->FindVar("sv_allow_lobby_connect_only")->SetValue(0);
     *cookie = val;
 }
 ConCommand cookie("sv_cookie", Cookie_f, "Lobby reservation cookie");
@@ -223,7 +223,7 @@ bool l4dtoolz::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameSe
 
     if (!gamerules_ptr) {
         auto client = (uintptr_t **)gameServerFactory("ServerGameClients003", NULL);
-        auto gamerules = *(uintptr_t ****)(client[0][rules_idx] + rules_off);  // mov
+        auto gamerules = *(uintptr_t ****)(client[0][rules_idx] + rules_off);
         if (CMPPTR(gamerules, 0x3U, gameServerFactory)) gamerules_ptr = gamerules;
     }
     if (!sv_ptr) {

@@ -20,7 +20,6 @@
 #### `sv_cookie <cookie>`
 - Usually, there is no need to use this command manually. It's recommended to use [Dynamic Lobby Plugin](https://github.com/lakwsh/l4d2_rmc) for automatic management.
 - A `cookie` of 0 means removing the lobby, and `sv_allow_lobby_connect_only` is automatically set to 0.
-- When `cookie` is not 0, `sv_allow_lobby_connect_only` is automatically set to 1.
 - **Note: Not removing the lobby will limit the maximum number of players to 4 in campaigns and 8 in versus mode.**
 
 ## 2. Tickrate Unlock
