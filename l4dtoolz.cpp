@@ -18,7 +18,7 @@
             Msg("[L4DToolZ] " #name " init error\n"); \
             return;                                   \
         }                                             \
-    } while (0);
+    } while (0)
 #define CHK_RET_VAR_MSG(cond, name, val)              \
     do {                                              \
         if (cond) {                                   \
@@ -26,7 +26,7 @@
             Msg("[L4DToolZ] " #name " init error\n"); \
             return;                                   \
         }                                             \
-    } while (0);
+    } while (0)
 
 #pragma pack(push, 1)
 class CSteamID {
@@ -108,8 +108,8 @@ void Cookie_f(const CCommand &args) {
         return;
     }
     uint64 val = atoll(args[1]);
-    g_cvar->FindVar("sv_hosting_lobby")->SetValue(val != 0);
-    g_cvar->FindVar("sv_allow_lobby_connect_only")->SetValue(val != 0);
+    g_cvar->FindVar("sv_hosting_lobby")->SetValue((val != 0) ? 1 : 0);
+    if (!val) g_cvar->FindVar("sv_allow_lobby_connect_only")->SetValue(0);
     *cookie = val;
 }
 ConCommand cookie("sv_cookie", Cookie_f, "Lobby reservation cookie");
@@ -149,7 +149,7 @@ ConVar sv_steam_bypass("sv_steam_bypass", "0", 0, "Bypass steam validation", tru
 
 #define rate_idx     0x2C
 #define snapshot_idx 0x87  // 2231
-void l4dtoolz::ClientSettingsChanged(edict_t *pEdict)  // rate
+void l4dtoolz::ClientSettingsChanged(edict_t *pEdict)
 {
     if (g_tickrate == 30) return;
     CHK_RET_MSG(!sv_ptr, "sv");
@@ -157,9 +157,17 @@ void l4dtoolz::ClientSettingsChanged(edict_t *pEdict)  // rate
     CHK_RET_MSG(!CHKPTR(edicts, 0x3U), "edicts");
     auto idx = (int)(pEdict - edicts);
     auto net = (int *)g_engine->GetPlayerNetInfo(idx);
-    if (net) net[rate_idx] = g_tickrate * 1000;  // real
-    auto client = CALL(int *, ((uintptr_t **)sv_ptr)[0][client_idx], int)(sv_ptr, idx - 1);  // +4
-    if (client) client[snapshot_idx - 1] = 1.0f / g_tickrate;
+    if (net) {  // only real conn
+        auto rate = atoi(g_engine->GetClientConVarValue(idx, "rate"));
+        auto min = g_cvar->FindVar("sv_minrate")->GetInt();  // bugfix?
+        net[rate_idx] = MAX(rate, min);
+    }
+    auto client = CALL(float *, ((uintptr_t **)sv_ptr)[0][client_idx], int)(sv_ptr, idx - 1);  // +4
+    if (client) {
+        auto rate = atoi(g_engine->GetClientConVarValue(idx, "cl_updaterate"));
+        auto min = g_cvar->FindVar("sv_minupdaterate")->GetInt();  // bugfix?
+        client[snapshot_idx - 1] = 1.0f / MAX(rate, min);
+    }
 }
 
 PLUGIN_RESULT l4dtoolz::ClientConnect(bool *bAllowConnect, edict_t *pEntity, const char *, const char *, char *, int) {
@@ -223,7 +231,7 @@ bool l4dtoolz::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameSe
 
     if (!gamerules_ptr) {
         auto client = (uintptr_t **)gameServerFactory("ServerGameClients003", NULL);
-        auto gamerules = *(uintptr_t ****)(client[0][rules_idx] + rules_off);  // mov
+        auto gamerules = *(uintptr_t ****)(client[0][rules_idx] + rules_off);
         if (CMPPTR(gamerules, 0x3U, gameServerFactory)) gamerules_ptr = gamerules;
     }
     if (!sv_ptr) {
@@ -254,6 +262,9 @@ bool l4dtoolz::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameSe
         tickint_org = game[0][tickint_idx];
         write_dword(tickint_ptr, (uintptr_t)&GetTickInterval);
         ((uint *)g_cvar->FindVar("net_splitpacket_maxrate"))[15] = 0;  // m_bHasMax
+        ((uint *)g_cvar->FindVar("sv_minrate"))[15] = 0;
+        g_cvar->FindVar("sv_minrate")->SetValue(g_tickrate * 1000);
+        g_cvar->FindVar("sv_minupdaterate")->SetValue(g_tickrate);
         Msg("[L4DToolZ] tickrate: %d\n", g_tickrate);
     }
     return true;

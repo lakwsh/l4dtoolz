@@ -20,7 +20,6 @@
 #### `sv_cookie <cookie>`
 - Usually, there is no need to use this command manually. It's recommended to use [Dynamic Lobby Plugin](https://github.com/lakwsh/l4d2_rmc) for automatic management.
 - A `cookie` of 0 means removing the lobby, and `sv_allow_lobby_connect_only` is automatically set to 0.
-- When `cookie` is not 0, `sv_allow_lobby_connect_only` is automatically set to 1.
 - **Note: Not removing the lobby will limit the maximum number of players to 4 in campaigns and 8 in versus mode.**
 
 ## 2. Tickrate Unlock
@@ -28,8 +27,8 @@
 - **Note: If this extension is manually loaded through the plugin_load command, tickrate anomalies may occur.**
 ### 2.1 Related CVars
 - Need to modify (write to server.cfg, some cvars need sm_cvar prefix):
-- `sv_mincmdrate`,`sv_maxcmdrate`,`nb_update_frequency`,`sv_client_min_interp_ratio`,
-- `fps_max`,`sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
+- `sv_minrate`,`sv_minupdaterate`,`sv_mincmdrate`,`sv_maxcmdrate`,`nb_update_frequency`,`fps_max`,
+- `sv_client_min_interp_ratio`,`sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
 
 ## 3. Bypass SteamID Verification
 #### `sv_steam_bypass <0/1>` (Set to 1 to bypass SteamID verification)
