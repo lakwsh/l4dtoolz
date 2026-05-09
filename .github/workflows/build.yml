@@ -1,0 +1,132 @@
+name: l4dtoolz
+
+on:
+  schedule:
+    - cron: '30 03 01 */3 *'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Build target'
+        type: choice
+        options:
+          - all
+          - main
+          - '2155'
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.target || 'all' }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.m.outputs.branches }}
+    steps:
+      - id: m
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.target }}" != "all" ]; then
+            echo 'branches=["${{ inputs.target }}"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'branches=["main","2155"]' >> "$GITHUB_OUTPUT"
+          fi
+
+  build_linux:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.setup.outputs.branches) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          repository: lakwsh/hl2sdk-l4d2
+          path: hl2sdk-l4d2
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+          path: l4dtoolz
+          ref: ${{ matrix.branch }}
+      - name: Build L4DToolZ
+        working-directory: l4dtoolz
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace/l4dtoolz ubuntu:16.04 bash -c "
+            dpkg --add-architecture i386 &&
+            apt update &&
+            apt install -y gcc-5-multilib g++-5-multilib make &&
+            make all
+          "
+      - uses: actions/upload-artifact@v6
+        with:
+          name: linux-${{ matrix.branch }}
+          path: l4dtoolz/Release/l4dtoolz.so
+          retention-days: 1
+          if-no-files-found: error
+
+  build_windows:
+    needs: setup
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.setup.outputs.branches) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          repository: lakwsh/hl2sdk-l4d2
+          path: hl2sdk-l4d2
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+          path: l4dtoolz
+          ref: ${{ matrix.branch }}
+      - uses: microsoft/setup-msbuild@v3
+      - name: Build hl2sdk
+        working-directory: hl2sdk-l4d2
+        run: msbuild tier1\tier1-2005.vcxproj /p:Configuration=Release /p:Platform=Win32 -maxcpucount
+      - name: Build L4DToolZ
+        working-directory: l4dtoolz
+        run: msbuild l4dtoolz.vcxproj /p:Configuration=Release /p:Platform=Win32 -maxcpucount
+      - uses: actions/upload-artifact@v6
+        with:
+          name: windows-${{ matrix.branch }}
+          path: l4dtoolz/Release/l4dtoolz.dll
+          retention-days: 1
+          if-no-files-found: error
+
+  package_release:
+    needs: [setup, build_linux, build_windows]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.setup.outputs.branches) }}
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: dist
+          pattern: '*-${{ matrix.branch }}'
+          merge-multiple: true
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.branch }}
+          sparse-checkout: |
+            README.md
+            README_EN.md
+          path: docs
+      - name: Download vdf
+        run: |
+          wget https://oss.lakwsh.net/l4dtoolz.vdf
+          mv *.vdf docs/*.md dist/
+      - uses: actions/upload-artifact@v6
+        with:
+          name: l4dtoolz-${{ github.run_id }}-${{ matrix.branch }}
+          path: dist
+          compression-level: 9
+          if-no-files-found: error
