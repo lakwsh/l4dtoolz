@@ -5,6 +5,7 @@
 #define HOOK_DEF(ret, func, ...) static ret FUNC_T func(__VA_ARGS__)
 #define CALL(ret, ptr, ...) ((ret (__thiscall *)(void *, __VA_ARGS__))ptr)
 
+#define state_off   0x07
 #define info_idx    0x88
 #define rules_off   0x02
 #define sv_off      0x08
