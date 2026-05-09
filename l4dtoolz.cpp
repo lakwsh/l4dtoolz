@@ -8,9 +8,6 @@
 #include "sigtool.h"
 #include "l4dtoolz.h"
 
-#define BINMSIZE 0x1400000  // 20M
-#define CHKPTR(P, V) ((P) && !((uintptr_t)(P) & (V)))
-#define CMPPTR(P, V, C) (CHKPTR(P, V) && abs((int)(P) - (int)(C)) < BINMSIZE)
 #define READCALL(P) (((P) + 5 - 1) + *(int *)(P))
 #define CHK_RET_MSG(cond, name)                       \
     do {                                              \
@@ -60,8 +57,6 @@ static uintptr_t check_org;
 static uintptr_t *steam3_ptr;
 static uintptr_t *authrsp_ptr;
 static uintptr_t authrsp_org;
-static uintptr_t tickint_ptr;
-static uintptr_t tickint_org;
 
 static void write_dword(uintptr_t addr, uintptr_t val) {
     static uint8_t dword[6] = {0x04, 0x00};
@@ -72,12 +67,12 @@ static void write_dword(uintptr_t addr, uintptr_t val) {
 }
 
 // Linux: static int FUNC_T GetTotalNumPlayersSupported(void *);
-static int FUNC_T GetTotalNumPlayersSupported() {
+static int FUNC_T GetTotalNumPlayersSupported(void) {
     return 32;  // max
 }
 
 // Linux: static int FUNC_T GetMaxHumanPlayers(void *);
-static int FUNC_T GetMaxHumanPlayers() {
+static int FUNC_T GetMaxHumanPlayers(void) {
     return g_cvar->FindVar("sv_maxplayers")->GetInt();
 }
 
@@ -127,7 +122,7 @@ void l4dtoolz::ServerActivate(edict_t *, int, int) {
     int slots = sv_maxplayers.GetInt();
     if (slots >= 0) ((int *)sv_ptr)[slots_idx] = slots;
     if (rules_max_ptr) return;
-    CHK_RET_MSG(!gamerules_ptr || !CHKPTR(*gamerules_ptr, 0x7U), "sv_maxplayers(rules)");  // malloc
+    CHK_RET_MSG(!gamerules_ptr || !check_addr((uintptr_t)*gamerules_ptr), "sv_maxplayers(rules)");  // malloc p8
     rules_max_ptr = (uintptr_t)&(*gamerules_ptr)[0][info_idx];
     rules_max_org = (*gamerules_ptr)[0][info_idx];
     if (slots >= 0) write_dword(rules_max_ptr, (uintptr_t)&GetMaxHumanPlayers);
@@ -147,6 +142,25 @@ void OnBypassAuth(IConVar *var, const char *, float) {
 }
 ConVar sv_steam_bypass("sv_steam_bypass", "0", 0, "Bypass steam validation", true, 0, true, 1, OnBypassAuth);
 
+#define state_idx   0x50    // rodata
+#define tick_off    0x08
+#define hasmax_idx  0x3C    // m_bHasMax
+ConVar sv_tickrate("sv_tickrate", "30", 0);
+void l4dtoolz::LevelShutdown(void) {
+    int tick = MAX(sv_tickrate.GetInt(), 1);
+    if (tick == g_tickrate) return;
+    auto state = *(uintptr_t *)(((uintptr_t **)g_engine)[0][state_idx] + state_off);
+    CHK_RET_MSG(!check_addr((uintptr_t)state), "sv_tickrate(state)");
+    g_tickrate = tick;
+    *(float *)(state + tick_off) = 1.0f / tick;
+    ((bool *)g_cvar->FindVar("net_splitpacket_maxrate"))[hasmax_idx] = false;
+    ((bool *)g_cvar->FindVar("sv_minrate"))[hasmax_idx] = false;
+    ((bool *)g_cvar->FindVar("sv_maxrate"))[hasmax_idx] = false;
+    g_cvar->FindVar("sv_minrate")->SetValue(tick * 1000);
+    g_cvar->FindVar("sv_minupdaterate")->SetValue(tick);
+    Msg("[L4DToolZ] tickrate set to %d\n", tick);
+}
+
 #define rate_idx     0x2C
 #define snapshot_idx 0x88  // 2231
 void l4dtoolz::ClientSettingsChanged(edict_t *pEdict)
@@ -154,19 +168,25 @@ void l4dtoolz::ClientSettingsChanged(edict_t *pEdict)
     if (g_tickrate == 30) return;
     CHK_RET_MSG(!sv_ptr, "sv");
     auto edicts = ((edict_t **)sv_ptr)[edict_idx];
-    CHK_RET_MSG(!CHKPTR(edicts, 0x3U), "edicts");
+    CHK_RET_MSG(!check_addr((uintptr_t)edicts), "edicts");  // p4
     auto idx = (int)(pEdict - edicts);
     auto net = (int *)g_engine->GetPlayerNetInfo(idx);
     if (net) {  // only real conn
         auto rate = atoi(g_engine->GetClientConVarValue(idx, "rate"));
-        auto min = g_cvar->FindVar("sv_minrate")->GetInt();  // bugfix?
-        net[rate_idx] = MAX(rate, min);
+        auto min = g_cvar->FindVar("sv_minrate")->GetInt();
+        auto max = g_cvar->FindVar("sv_maxrate")->GetInt();
+        auto val = MAX(rate, min);
+        if ((max > 0) && (max > min)) val = MIN(val, max);
+        net[rate_idx] = val;
     }
     auto client = CALL(float *, ((uintptr_t **)sv_ptr)[0][client_idx], int)(sv_ptr, idx - 1);  // +4
     if (client) {
         auto rate = atoi(g_engine->GetClientConVarValue(idx, "cl_updaterate"));
-        auto min = g_cvar->FindVar("sv_minupdaterate")->GetInt();  // bugfix?
-        client[snapshot_idx - 1] = 1.0f / MAX(rate, min);
+        auto min = g_cvar->FindVar("sv_minupdaterate")->GetInt();
+        auto max = g_cvar->FindVar("sv_maxupdaterate")->GetInt();
+        auto val = MAX(rate, min);
+        if ((max > 0) && (max > min)) val = MIN(val, max);
+        client[snapshot_idx - 1] = 1.0f / MIN(val, g_tickrate);
     }
 }
 
@@ -178,14 +198,14 @@ PLUGIN_RESULT l4dtoolz::ClientConnect(bool *bAllowConnect, edict_t *pEntity, con
         *bAllowConnect = false;
         return PLUGIN_STOP;
     }
-    Msg("[L4DToolZ] %llu validated.\n", rsp.id);
+    Msg("[L4DToolZ] %llu validated\n", rsp.id);
     return PLUGIN_CONTINUE;
 }
 
 HOOK_DEF(void, OnValidateAuthTicketResponse, ValidateAuthTicketResponse_t *rsp) {
     if (!rsp->code && (rsp->id.m_steamid != rsp->owner.m_steamid)) {
         rsp->code = 2;
-        Msg("[L4DToolZ] %llu using family sharing, owner: %llu.\n", rsp->id.m_steamid, rsp->owner.m_steamid);
+        Msg("[L4DToolZ] %llu using family sharing, owner: %llu\n", rsp->id.m_steamid, rsp->owner.m_steamid);
     }
     CALL(void, authrsp_org, void *)(steam3_ptr, rsp);
 }
@@ -210,40 +230,34 @@ void OnForceUnreserved(IConVar *var, const char *, float) {
 }
 ConVar sv_force_unreserved("sv_force_unreserved", "0", 0, "Disallow lobby reservation", true, 0, true, 1, OnForceUnreserved);
 
-// Linux: static float FUNC_T GetTickInterval(void *);
-static float FUNC_T GetTickInterval() {
-    static float interval = 1.0f / g_tickrate;
-    return interval;
-}
-
 #define rules_idx   0x12  // rodata
 #define sv_idx      0x80  // rodata
-#define title_idx   0x8   // rodata
-#define match_idx   0x4   // rodata
-#define tickint_idx 0x09  // rodata
+#define title_idx   0x08  // rodata
+#define match_idx   0x04  // rodata
 bool l4dtoolz::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory) {
     g_engine = (IVEngineServer *)interfaceFactory(INTERFACEVERSION_VENGINESERVER, NULL);
     g_cvar = (ICvar *)interfaceFactory(CVAR_INTERFACE_VERSION, NULL);
-    g_tickrate = CommandLine()->ParmValue("-tickrate", 30);
 
     ConnectTier1Libraries(&interfaceFactory, 1);
     ConVar_Register(0);
 
+    sv_tickrate.SetValue(CommandLine()->ParmValue("-tickrate", 30));
+
     if (!gamerules_ptr) {
         auto client = (uintptr_t **)gameServerFactory("ServerGameClients003", NULL);
         auto gamerules = *(uintptr_t ****)(client[0][rules_idx] + rules_off);
-        if (CMPPTR(gamerules, 0x3U, gameServerFactory)) gamerules_ptr = gamerules;
+        if (check_addr((uintptr_t)gamerules)) gamerules_ptr = gamerules;  // p4
     }
     if (!sv_ptr) {
         auto sv = *(uintptr_t ***)(((uint **)g_engine)[0][sv_idx] + sv_off);
-        if (!CMPPTR(sv, 0x7U, interfaceFactory)) return false;
+        if (!check_addr((uintptr_t)sv)) return false;  // p8
         sv_ptr = (uintptr_t *)sv;
         lobbyreq_ptr = (uintptr_t)&sv[0][lobby_idx];
         lobbyreq_org = sv[0][lobby_idx];
         check_ptr = (uintptr_t)&sv[0][check_idx];
         check_org = sv[0][check_idx];
         auto func = (uintptr_t *(*)(void))READCALL(sv[0][steam3_idx] + steam3_off);
-        if (CMPPTR(func, 0xFU, interfaceFactory)) {
+        if (check_addr((uintptr_t)func)) {  // p0
             steam3_ptr = func();  // conn
             authrsp_ptr = &steam3_ptr[authrsp_idx];
             authrsp_org = *authrsp_ptr;
@@ -255,22 +269,10 @@ bool l4dtoolz::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameSe
         match_max_ptr = (uintptr_t)&title[0][match_idx];
         match_max_org = title[0][match_idx];
     }
-
-    if ((g_tickrate != 30) && !tickint_ptr) {
-        auto game = (uintptr_t **)gameServerFactory(INTERFACEVERSION_SERVERGAMEDLL, NULL);
-        tickint_ptr = (uintptr_t)&game[0][tickint_idx];
-        tickint_org = game[0][tickint_idx];
-        write_dword(tickint_ptr, (uintptr_t)&GetTickInterval);
-        ((uint *)g_cvar->FindVar("net_splitpacket_maxrate"))[15] = 0;  // m_bHasMax
-        ((uint *)g_cvar->FindVar("sv_minrate"))[15] = 0;
-        g_cvar->FindVar("sv_minrate")->SetValue(g_tickrate * 1000);
-        g_cvar->FindVar("sv_minupdaterate")->SetValue(g_tickrate);
-        Msg("[L4DToolZ] tickrate: %d\n", g_tickrate);
-    }
     return true;
 }
 
-void l4dtoolz::Unload() {
+void l4dtoolz::Unload(void) {
     ConVar_Unregister();
     DisconnectTier1Libraries();
 
@@ -279,5 +281,4 @@ void l4dtoolz::Unload() {
     write_dword(rules_max_ptr, rules_max_org);
     write_dword(match_max_ptr, match_max_org);
     write_dword(lobbyreq_ptr, lobbyreq_org);
-    write_dword(tickint_ptr, tickint_org);
 }

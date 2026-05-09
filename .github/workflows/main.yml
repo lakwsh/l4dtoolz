@@ -15,11 +15,11 @@ jobs:
   build_linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         repository: lakwsh/hl2sdk-l4d2
         path: hl2sdk-l4d2
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
         path: l4dtoolz
@@ -32,7 +32,7 @@ jobs:
           apt install -y gcc-5-multilib g++-5-multilib make &&
           make all
         "
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: linux
         path: l4dtoolz/Release/l4dtoolz.so
@@ -41,23 +41,23 @@ jobs:
   build_windows:
     runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         repository: lakwsh/hl2sdk-l4d2
         path: hl2sdk-l4d2
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
         path: l4dtoolz
     - name: Setup msbuild
-      uses: microsoft/setup-msbuild@v2
+      uses: microsoft/setup-msbuild@v3
     - name: Build hl2sdk
       working-directory: hl2sdk-l4d2
       run: msbuild tier1\tier1-2005.vcxproj /p:Configuration=Release /p:Platform=Win32 -maxcpucount:8
     - name: Build L4DToolZ
       working-directory: l4dtoolz
       run: msbuild l4dtoolz.vcxproj /p:Configuration=Release /p:Platform=Win32 -maxcpucount:8
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: windows
         path: l4dtoolz/Release/l4dtoolz.dll
@@ -67,11 +67,11 @@ jobs:
     needs: [build_linux, build_windows]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v7
       with:
         path: dist
         merge-multiple: true
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         sparse-checkout: |
           README.md
@@ -81,7 +81,7 @@ jobs:
       run: |
         wget https://oss.lakwsh.net/l4dtoolz.vdf
         mv *.vdf docs/*.md dist/
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: l4dtoolz-${{github.run_id}}
         path: dist

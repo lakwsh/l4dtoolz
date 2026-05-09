@@ -6,14 +6,14 @@
 class l4dtoolz : public IServerPluginCallbacks {
 public:
     virtual bool Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory);
-    virtual void Unload();
-    virtual void Pause() { }
-    virtual void UnPause() { }
-    virtual const char *GetPluginDescription() { return "L4DToolZ v2.4.3, https://github.com/lakwsh/l4dtoolz"; }
+    virtual void Unload(void);
+    virtual void Pause(void) { }
+    virtual void UnPause(void) { }
+    virtual const char *GetPluginDescription() { return "L4DToolZ v2.5.0, https://github.com/lakwsh/l4dtoolz"; }
     virtual void LevelInit(char const *pMapName) { }
     virtual void ServerActivate(edict_t *pEdictList, int edictCount, int clientMax);
     virtual void GameFrame(bool simulating) { }
-    virtual void LevelShutdown() { }
+    virtual void LevelShutdown(void);
     virtual void ClientActive(edict_t *pEntity) { }
     virtual void ClientDisconnect(edict_t *pEntity) { }
     virtual void ClientPutInServer(edict_t *pEntity, char const *playername) { }

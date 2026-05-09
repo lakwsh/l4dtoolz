@@ -1,7 +1,6 @@
 # L4DToolZ
 ### [English Version](https://github.com/lakwsh/l4dtoolz/blob/main/README_EN.md)
 - 安装方法: [下载](https://github.com/lakwsh/l4dtoolz/actions/workflows/main.yml)并解压到addons文件夹
-- **如使用tickrate解锁功能,请删除tickrate_enabler**
 - 遇到任何问题请先在**服务器控制台**输入`plugin_print`确认扩展已经正确加载
 
 ## 1. 人数解锁
@@ -23,12 +22,11 @@
 - **注意: 不移除大厅会限制最大玩家数为战役4人/对抗8人**
 
 ## 2. tickrate解锁
-- 在启动项中添加`-tickrate <tick>`,不设置则不做修改
-- **注意: 如通过plugin_load指令手动加载本扩展,可能出现tickrate异常问题**
+- 在启动项中添加`-tickrate <tick>`或使用`sv_tickrate <tick>`指令修改tickrate
 ### 2.1 相关CVar
 - 需要修改(写到server.cfg,部分cvar需要sm_cvar前缀):
-- `sv_minrate`,`sv_minupdaterate`,`sv_mincmdrate`,`sv_maxcmdrate`,`nb_update_frequency`,`fps_max`,
-- `sv_client_min_interp_ratio`,`sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
+- `sv_minrate`,`sv_maxrate`,`sv_minupdaterate`,`sv_maxupdaterate`,`sv_mincmdrate`,`sv_maxcmdrate`,`nb_update_frequency`,
+- `fps_max`,`sv_client_min_interp_ratio`,`sv_client_max_interp_ratio`,`net_splitrate`,`net_splitpacket_maxrate`
 
 ## 3. 绕过SteamID验证
 #### `sv_steam_bypass <0/1>`(置1为不验证SteamID)
@@ -44,9 +42,12 @@
 ### 5.1 更可靠
 - 相比于原版l4dtoolz和tickrate_enabler完全不依赖签名
 - 采用偏移方式寻址,游戏更新此扩展失效的几率低
-- 重写大部分功能实现方式,大幅提高可靠性
+- 重写大部分功能实现方式,加入指针有效性校验,大幅提高可靠性
 ### 5.2 MaxClients可动态修改
 - 原版最大客户端数为固定值32(建议在服务器闲置状态下修改,否则可能崩溃)
+### 5.3 tickrate可动态修改
+- 运行时可通过`sv_tickrate <tick>`动态修改tickrate(changelevel后生效)
+- **注意: tickrate变更后会自动更新`sv_minrate`和`sv_minupdaterate`值**
 
 ## 6. 推荐插件
 #### [配套纯净多人&动态大厅插件(可选)](https://github.com/lakwsh/l4d2_rmc)
