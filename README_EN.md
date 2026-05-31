@@ -1,6 +1,6 @@
 # L4DToolZ
 ### [中文版本](https://github.com/lakwsh/l4dtoolz/blob/main/README.md)
-- Installation: [Download](https://github.com/lakwsh/l4dtoolz/actions/workflows/main.yml) and unzip to the addons folder.
+- Installation: [Download](https://github.com/lakwsh/l4dtoolz/releases/latest) and unzip to the addons folder.
 - If you encounter any problem, first input `plugin_print` in the **server console** to confirm that the extension is loaded correctly.
 
 ## 1. Player Number Unlock

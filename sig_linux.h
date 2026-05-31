@@ -2,7 +2,7 @@
 #define SIG_LINUX_H
 
 #define FUNC_T __cdecl
-#define HOOK_DEF(ret, func, ...) static ret FUNC_T func(void *, __VA_ARGS__)
+#define HOOK_DEF(ret, func, ...) static ret FUNC_T func(void *self, __VA_ARGS__)
 #define CALL(ret, ptr, ...) ((ret (*)(void *, __VA_ARGS__))ptr)
 
 #define state_off   0x0A  // bss

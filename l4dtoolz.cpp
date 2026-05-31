@@ -66,13 +66,11 @@ static void write_dword(uintptr_t addr, uintptr_t val) {
     write_sig(addr, patch);
 }
 
-// Linux: static int FUNC_T GetTotalNumPlayersSupported(void *);
-static int FUNC_T GetTotalNumPlayersSupported(void) {
+static int FUNC_T GetTotalNumPlayersSupported(void *self) {
     return 32;  // max
 }
 
-// Linux: static int FUNC_T GetMaxHumanPlayers(void *);
-static int FUNC_T GetMaxHumanPlayers(void) {
+static int FUNC_T GetMaxHumanPlayers(void *self) {
     return g_cvar->FindVar("sv_maxplayers")->GetInt();
 }
 
@@ -176,7 +174,7 @@ void l4dtoolz::ClientSettingsChanged(edict_t *pEdict)
         auto min = g_cvar->FindVar("sv_minrate")->GetInt();
         auto max = g_cvar->FindVar("sv_maxrate")->GetInt();
         auto val = MAX(rate, min);
-        if ((max > 0) && (max > min)) val = MIN(val, max);
+        if ((max > 0) && (max >= min)) val = MIN(val, max);
         net[rate_idx] = val;
     }
     auto client = CALL(float *, ((uintptr_t **)sv_ptr)[0][client_idx], int)(sv_ptr, idx - 1);  // +4
@@ -185,7 +183,7 @@ void l4dtoolz::ClientSettingsChanged(edict_t *pEdict)
         auto min = g_cvar->FindVar("sv_minupdaterate")->GetInt();
         auto max = g_cvar->FindVar("sv_maxupdaterate")->GetInt();
         auto val = MAX(rate, min);
-        if ((max > 0) && (max > min)) val = MIN(val, max);
+        if ((max > 0) && (max >= min)) val = MIN(val, max);
         client[snapshot_idx - 1] = 1.0f / MIN(val, g_tickrate);
     }
 }
@@ -207,7 +205,7 @@ HOOK_DEF(void, OnValidateAuthTicketResponse, ValidateAuthTicketResponse_t *rsp) 
         rsp->code = 2;
         Msg("[L4DToolZ] %llu using family sharing, owner: %llu\n", rsp->id.m_steamid, rsp->owner.m_steamid);
     }
-    CALL(void, authrsp_org, void *)(steam3_ptr, rsp);
+    CALL(void, authrsp_org, void *)(self, rsp);
 }
 
 void OnAntiSharing(IConVar *var, const char *, float) {
